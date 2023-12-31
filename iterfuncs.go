@@ -83,3 +83,74 @@ func Enumerate[T any](i *Iterator[T]) *Iterator[Enumeration[T]] {
 		return result, true
 	})
 }
+
+func Batched[T any](i *Iterator[T], batchSize int) *Iterator[[]T] {
+	if batchSize <= 0 {
+		return New(func() ([]T, bool) {
+			return nil, false
+		})
+	}
+	var stopped bool
+	return New(func() ([]T, bool) {
+		if stopped {
+			return nil, false
+		}
+		result := make([]T, 0, batchSize)
+		for count := 0; count < batchSize; count++ {
+			v, ok := i.f()
+			if !ok {
+				stopped = true
+				if len(result) > 0 {
+					break
+				}
+				return nil, false
+			}
+			result = append(result, v)
+		}
+		return result, true
+	})
+}
+
+func Repeat[T any](elem T) *Iterator[T] {
+	return New(func() (T, bool) {
+		return elem, true
+	})
+}
+
+func Cycle[T any](i *Iterator[T]) *Iterator[T] {
+	const (
+		original = iota
+		cycled
+		empty
+	)
+	var (
+		elems []T
+		idx   int
+	)
+	state := original
+	return New(func() (T, bool) {
+		switch state {
+		case original:
+			v, ok := i.f()
+			if ok {
+				elems = append(elems, v)
+				return v, true
+			}
+
+			if len(elems) == 0 {
+				state = empty
+				return v, false
+			}
+
+			state = cycled
+			fallthrough
+		case cycled:
+			v := elems[idx]
+			idx = (idx + 1) % len(elems)
+			return v, true
+		default:
+			var zero T
+			return zero, false
+		}
+	})
+}

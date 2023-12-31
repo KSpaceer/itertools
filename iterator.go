@@ -40,6 +40,25 @@ func (i *Iterator[T]) Drop(count int) int {
 	return droppedCount
 }
 
+func (i *Iterator[T]) Limit(size int) *Iterator[T] {
+	var zero T
+	if size <= 0 {
+		return New(func() (T, bool) {
+			return zero, false
+		})
+	}
+
+	var count int
+	return New(func() (T, bool) {
+		if count >= size || !i.Next() {
+			return zero, false
+		}
+		v := i.Elem()
+		count++
+		return v, true
+	})
+}
+
 func (i *Iterator[T]) WithStep(step int) *Iterator[T] {
 	var zero T
 	if step <= 0 {

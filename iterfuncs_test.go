@@ -166,4 +166,107 @@ func TestFibonacciIterator_Iterfuncs(t *testing.T) {
 			t.Errorf("expected %v, got %v", expected, result)
 		}
 	})
+
+	t.Run("batched", func(t *testing.T) {
+		i := itertools.Batched(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+			5,
+		)
+		result := i.Collect()
+
+		expected := [][]int{
+			collectedValues[:5],
+			collectedValues[5:10],
+			collectedValues[10:],
+		}
+
+		if len(result) != len(expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		} else {
+			for i := range result {
+				if !sliceEqual(expected[i], result[i]) {
+					t.Errorf("expected %v, got %v", expected, result)
+					break
+				}
+			}
+		}
+	})
+
+	t.Run("batched: exact size", func(t *testing.T) {
+		i := itertools.Batched(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+			3,
+		)
+		result := i.Collect()
+
+		expected := [][]int{
+			collectedValues[:3],
+			collectedValues[3:6],
+			collectedValues[6:9],
+			collectedValues[9:],
+		}
+
+		if len(result) != len(expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		} else {
+			for i := range result {
+				if !sliceEqual(expected[i], result[i]) {
+					t.Errorf("expected %v, got %v", expected, result)
+					break
+				}
+			}
+		}
+	})
+
+	t.Run("batched: zero size", func(t *testing.T) {
+		i := itertools.Batched(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+			0,
+		)
+		if i.Next() {
+			t.Errorf("did not expect elements in zero size batch; elem: %v", i.Elem())
+		}
+	})
+
+	t.Run("repeat", func(t *testing.T) {
+		i := itertools.Repeat("hello").Limit(3)
+		result := i.Collect()
+
+		expected := []string{"hello", "hello", "hello"}
+
+		if !sliceEqual(expected, result) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("cycle", func(t *testing.T) {
+		i := itertools.Cycle(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+		).Limit(len(collectedValues) * 3)
+
+		result := i.Collect()
+
+		var expected []int
+		expected = append(expected, collectedValues...)
+		expected = append(expected, collectedValues...)
+		expected = append(expected, collectedValues...)
+
+		if !sliceEqual(expected, result) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("empty cycle", func(t *testing.T) {
+		i := itertools.Cycle(itertools.New(func() (int, bool) {
+			return 0, false
+		}))
+
+		if i.Next() {
+			t.Errorf("did not expect elements in empty cycle iterator; elem: %d", i.Elem())
+		}
+
+		if i.Next() {
+			t.Errorf("did not expect elements in empty cycle iterator; elem: %d", i.Elem())
+		}
+	})
 }

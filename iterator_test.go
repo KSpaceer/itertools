@@ -36,6 +36,18 @@ func TestBasicIterator(t *testing.T) {
 			t.Errorf("expected zero value as max for empty iterator, but got %d", result)
 		}
 	})
+	t.Run("zero limit", func(t *testing.T) {
+		i := itertools.New(func() (int32, bool) { return 1, true }).Limit(0)
+		if i.Next() {
+			t.Errorf("expected iterator to be empty, but has element: %d", i.Elem())
+		}
+	})
+	t.Run("negative limit", func(t *testing.T) {
+		i := itertools.New(func() (int32, bool) { return 1, true }).Limit(-15)
+		if i.Next() {
+			t.Errorf("expected iterator to be empty, but has element: %d", i.Elem())
+		}
+	})
 }
 
 func TestFibonacciIterator(t *testing.T) {
@@ -109,6 +121,18 @@ func TestFibonacciIterator(t *testing.T) {
 		if dropped = i.Drop(1); dropped != 0 {
 			t.Errorf("expected to have nothing remained after drop, but had %d values", dropped)
 		}
+	})
+	t.Run("limit", func(t *testing.T) {
+		const limit = 5
+		i := itertools.New(fibonacciYielder(fibonacciLimit)).Limit(limit)
+
+		result := i.Collect()
+		expected := collectedValues[:limit]
+
+		if cmpResult := sliceCmp(expected, result); cmpResult != 0 {
+			t.Errorf("expected %v, but got %v", expected, result)
+		}
+
 	})
 	t.Run("with step", func(t *testing.T) {
 		type tcase struct {
@@ -467,6 +491,7 @@ func TestFibonacciIterator(t *testing.T) {
 			})
 		}
 	})
+
 }
 
 func fibonacciYielder(limit int) func() (int, bool) {

@@ -75,6 +75,18 @@ func TestSliceIterator(t *testing.T) {
 		}
 	})
 
+	t.Run("limit", func(t *testing.T) {
+		const limit = 5
+		i := itertools.NewSliceIterator(s).Limit(limit)
+
+		result := i.Collect()
+		expected := s[:limit]
+
+		if cmpResult := sliceCmp(expected, result); cmpResult != 0 {
+			t.Errorf("expected %v, but got %v", expected, result)
+		}
+	})
+
 	t.Run("with step", func(t *testing.T) {
 		type tcase struct {
 			name     string
@@ -510,6 +522,18 @@ func TestChanIterator(t *testing.T) {
 
 		if dropped = i.Drop(1); dropped != 0 {
 			t.Errorf("expected to have nothing remained after drop, but had %d values", dropped)
+		}
+	})
+
+	t.Run("limit", func(t *testing.T) {
+		const limit = 5
+		i := itertools.NewChanIterator(chanConstructor()).Limit(limit)
+
+		result := i.Collect()
+		expected := s[:limit]
+
+		if !sliceEqual(expected, result) {
+			t.Errorf("expected %v, but got %v", expected, result)
 		}
 	})
 
@@ -1273,6 +1297,18 @@ func TestAsciiIterator(t *testing.T) {
 		}
 	})
 
+	t.Run("limit", func(t *testing.T) {
+		const limit = 5
+		i := itertools.NewAsciiIterator(text).Limit(limit)
+
+		result := string(i.Collect())
+		expected := text[:limit]
+
+		if result != expected {
+			t.Errorf("expected %q, but got %q", expected, result)
+		}
+	})
+
 	t.Run("with step", func(t *testing.T) {
 		type tcase struct {
 			name     string
@@ -1723,6 +1759,18 @@ func TestUTF8Iterator(t *testing.T) {
 
 		if dropped = i.Drop(1); dropped != 0 {
 			t.Errorf("expected to have nothing remained after drop, but had %d values", dropped)
+		}
+	})
+
+	t.Run("limit", func(t *testing.T) {
+		const limit = 100
+		i := itertools.NewUTF8Iterator(text).Limit(limit)
+
+		result := string(i.Collect())
+		expected := string([]rune(text)[:limit])
+
+		if result != expected {
+			t.Errorf("expected %q, but got %q", expected, result)
 		}
 	})
 
