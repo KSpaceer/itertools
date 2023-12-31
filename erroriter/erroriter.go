@@ -5,6 +5,7 @@ import (
 	"github.com/KSpaceer/itertools"
 )
 
+// ErrIterationStop indicates that iteration is over.
 var ErrIterationStop = errors.New("iteration stop")
 
 // ErrorIterator is an iterator yielding itertools.Pair of value of type T and error.
