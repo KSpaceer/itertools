@@ -121,6 +121,17 @@ func TestFibonacciIterator_Iterfuncs(t *testing.T) {
 		}
 	})
 
+	t.Run("sum", func(t *testing.T) {
+		result := itertools.Sum(itertools.New(fibonacciYielder(fibonacciLimit)))
+		var expected int
+		for _, n := range collectedValues {
+			expected += n
+		}
+		if result != expected {
+			t.Errorf("expected %d, got %d", expected, result)
+		}
+	})
+
 	t.Run("find", func(t *testing.T) {
 		t.Run("found", func(t *testing.T) {
 			result, ok := itertools.Find(

@@ -1231,7 +1231,527 @@ func TestMapIterator(t *testing.T) {
 			})
 		}
 	})
+}
 
+func TestMapKeysIterator(t *testing.T) {
+	m := map[string]int{
+		"A": 10000,
+		"B": 5000,
+		"C": 2500,
+		"D": 1250,
+		"E": 625,
+	}
+
+	collectedValues := []string{"A", "B", "C", "D", "E"}
+
+	t.Run("nil map", func(t *testing.T) {
+		i := itertools.NewMapKeysIterator[int, int](nil)
+
+		if i.Next() {
+			t.Errorf("expected to have no elements in nil map iterator")
+		}
+	})
+
+	t.Run("collect", func(t *testing.T) {
+		result := itertools.NewMapKeysIterator(m).Collect()
+
+		slices.Sort(result)
+
+		if !sliceEqual(collectedValues, result) {
+			t.Errorf("expected %v, got %v", collectedValues, result)
+		}
+	})
+
+	t.Run("count", func(t *testing.T) {
+		result := itertools.NewMapIterator(m).Count()
+
+		if result != len(m) {
+			t.Errorf("expected Count to return %d, but got %d", len(m), result)
+		}
+	})
+
+	t.Run("range", func(t *testing.T) {
+		i := itertools.NewMapKeysIterator(m)
+		var found bool
+		key := "B"
+		i.Range(func(s string) bool {
+			if s == key {
+				found = true
+				return false
+			}
+			return true
+		})
+
+		if !found {
+			t.Errorf("expected to found map entry with key %s", key)
+		}
+	})
+
+	t.Run("filter", func(t *testing.T) {
+		type tcase struct {
+			name       string
+			filterFunc func(string) bool
+			expected   []string
+		}
+
+		tcases := []tcase{
+			{
+				name: "letter position is odd",
+				filterFunc: func(s string) bool {
+					return (s[0]-'A')%2 == 1
+				},
+				expected: []string{
+					"B",
+					"D",
+				},
+			},
+			{
+				name: "letter position is even",
+				filterFunc: func(s string) bool {
+					return (s[0]-'A')%2 == 0
+				},
+				expected: []string{
+					"A",
+					"C",
+					"E",
+				},
+			},
+			{
+				name: "pass all",
+				filterFunc: func(string) bool {
+					return true
+				},
+				expected: collectedValues,
+			},
+			{
+				name: "pass none",
+				filterFunc: func(string) bool {
+					return false
+				},
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				i := itertools.NewMapKeysIterator(m).Filter(tc.filterFunc)
+				result := i.Collect()
+
+				slices.Sort(result)
+
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
+				}
+
+			})
+		}
+	})
+
+	t.Run("reduce", func(t *testing.T) {
+		type tcase struct {
+			name         string
+			reducer      func(string, string) string
+			initialValue string
+			expected     string
+		}
+
+		tcases := []tcase{
+			{
+				name: "join keys ordered",
+				reducer: func(acc string, s string) string {
+					if acc == "" {
+						acc = s
+					} else {
+						elems := strings.Split(acc, "-")
+						i, _ := slices.BinarySearch(elems, s)
+						elems = slices.Insert(elems, i, s)
+						acc = strings.Join(elems, "-")
+					}
+					return acc
+				},
+				initialValue: "",
+				expected:     "A-B-C-D-E",
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapKeysIterator(m).
+					Reduce(tc.initialValue, tc.reducer)
+
+				if result != tc.expected {
+					t.Errorf("expected %v after reduce, got %v", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("all", func(t *testing.T) {
+		type tcase struct {
+			name      string
+			condition func(string) bool
+			expected  bool
+		}
+
+		tcases := []tcase{
+			{
+				name: "true",
+				condition: func(string) bool {
+					return true
+				},
+				expected: true,
+			},
+			{
+				name: "are keys contains only letters",
+				condition: func(s string) bool {
+					return !strings.ContainsFunc(s, func(r rune) bool {
+						return !unicode.IsLetter(r)
+					})
+				},
+				expected: true,
+			},
+			{
+				name: "keys have length greater than 2",
+				condition: func(s string) bool {
+					return len(s) > 2
+				},
+				expected: false,
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapKeysIterator(m).
+					All(tc.condition)
+				if result != tc.expected {
+					t.Errorf("expected %t in all, but got %t", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("any", func(t *testing.T) {
+		type tcase struct {
+			name      string
+			condition func(string) bool
+			expected  bool
+		}
+
+		tcases := []tcase{
+			{
+				name: "false",
+				condition: func(string) bool {
+					return false
+				},
+				expected: false,
+			},
+			{
+				name: "has any key with length greater than 2",
+				condition: func(s string) bool {
+					return len(s) > 2
+				},
+				expected: false,
+			},
+			{
+				name: "has C or D",
+				condition: func(s string) bool {
+					return s == "C" || s == "D"
+				},
+				expected: true,
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapKeysIterator(m).
+					Any(tc.condition)
+				if result != tc.expected {
+					t.Errorf("expected %t in any, but got %t", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("max", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(string, string) int
+			expected string
+		}
+
+		tcases := []tcase{
+			{
+				name:     "max key",
+				f:        cmp.Compare[string],
+				expected: "E",
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapKeysIterator(m).Max(tc.f)
+				if tc.expected != result {
+					t.Errorf("expected %v as max value, but got %v", tc.expected, result)
+				}
+			})
+		}
+	})
+}
+
+func TestMapValuesIterator(t *testing.T) {
+	m := map[string]int{
+		"A": 10000,
+		"B": 5000,
+		"C": 2500,
+		"D": 1250,
+		"E": 625,
+	}
+
+	collectedValues := []int{625, 1250, 2500, 5000, 10000}
+
+	t.Run("nil map", func(t *testing.T) {
+		i := itertools.NewMapValuesIterator[int, int](nil)
+
+		if i.Next() {
+			t.Errorf("expected to have no elements in nil map iterator")
+		}
+	})
+
+	t.Run("collect", func(t *testing.T) {
+		result := itertools.NewMapValuesIterator(m).Collect()
+
+		slices.Sort(result)
+
+		if !sliceEqual(collectedValues, result) {
+			t.Errorf("expected %v, got %v", collectedValues, result)
+		}
+	})
+
+	t.Run("count", func(t *testing.T) {
+		result := itertools.NewMapValuesIterator(m).Count()
+
+		if result != len(m) {
+			t.Errorf("expected Count to return %d, but got %d", len(m), result)
+		}
+	})
+
+	t.Run("range", func(t *testing.T) {
+		i := itertools.NewMapValuesIterator(m)
+		var found bool
+		value := 2500
+		i.Range(func(n int) bool {
+			if n == value {
+				found = true
+				return false
+			}
+			return true
+		})
+
+		if !found {
+			t.Errorf("expected to found map key = %d", value)
+		}
+	})
+
+	t.Run("filter", func(t *testing.T) {
+		type tcase struct {
+			name       string
+			filterFunc func(int) bool
+			expected   []int
+		}
+
+		tcases := []tcase{
+			{
+				name: "greater than 3000",
+				filterFunc: func(n int) bool {
+					return n > 3000
+				},
+				expected: []int{5000, 10000},
+			},
+			{
+				name: "pass all",
+				filterFunc: func(int) bool {
+					return true
+				},
+				expected: collectedValues,
+			},
+			{
+				name: "pass none",
+				filterFunc: func(int) bool {
+					return false
+				},
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				i := itertools.NewMapValuesIterator(m).Filter(tc.filterFunc)
+				result := i.Collect()
+
+				slices.Sort(result)
+
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
+				}
+
+			})
+		}
+	})
+
+	t.Run("reduce", func(t *testing.T) {
+		type tcase struct {
+			name         string
+			reducer      func(int, int) int
+			initialValue int
+			expected     int
+		}
+
+		tcases := []tcase{
+			{
+				name: "sum values",
+				reducer: func(acc int, n int) int {
+					return acc + n
+				},
+				initialValue: 0,
+				expected:     19375,
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapValuesIterator(m).
+					Reduce(tc.initialValue, tc.reducer)
+
+				if result != tc.expected {
+					t.Errorf("expected %v after reduce, got %v", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("all", func(t *testing.T) {
+		type tcase struct {
+			name      string
+			condition func(int) bool
+			expected  bool
+		}
+
+		tcases := []tcase{
+			{
+				name: "true",
+				condition: func(int) bool {
+					return true
+				},
+				expected: true,
+			},
+			{
+				name: "values divisible by 3",
+				condition: func(n int) bool {
+					return n%3 == 0
+				},
+				expected: false,
+			},
+			{
+				name: "does not have zero value",
+				condition: func(n int) bool {
+					return n != 0
+				},
+				expected: true,
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapValuesIterator(m).
+					All(tc.condition)
+				if result != tc.expected {
+					t.Errorf("expected %t in all, but got %t", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("any", func(t *testing.T) {
+		type tcase struct {
+			name      string
+			condition func(int) bool
+			expected  bool
+		}
+
+		tcases := []tcase{
+			{
+				name: "false",
+				condition: func(int) bool {
+					return false
+				},
+				expected: false,
+			},
+			{
+				name: "has value divisible by 4",
+				condition: func(n int) bool {
+					return n%4 == 0
+				},
+				expected: true,
+			},
+			{
+				name: "has jackpot",
+				condition: func(n int) bool {
+					return n == 777
+				},
+				expected: false,
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapValuesIterator(m).
+					Any(tc.condition)
+				if result != tc.expected {
+					t.Errorf("expected %t in any, but got %t", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("max", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(int, int) int
+			expected int
+		}
+
+		tcases := []tcase{
+			{
+				name:     "max value",
+				f:        cmp.Compare[int],
+				expected: 10000,
+			},
+			{
+				name: "min value",
+				f: func(a int, b int) int {
+					return cmp.Compare(b, a)
+				},
+				expected: 625,
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				result := itertools.NewMapValuesIterator(m).Max(tc.f)
+				if tc.expected != result {
+					t.Errorf("expected %v as max value, but got %v", tc.expected, result)
+				}
+			})
+		}
+	})
 }
 
 func TestAsciiIterator(t *testing.T) {
