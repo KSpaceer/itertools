@@ -152,17 +152,20 @@ func Repeat[T any](elem T) *Iterator[T] {
 
 // Cycle creates new iterator that endlessly repeats elements of source iterator.
 // If source iterator is empty, the cycle iterator is also empty.
-func Cycle[T any](i *Iterator[T]) *Iterator[T] {
+func Cycle[T any](i *Iterator[T], opts ...AllocationOption) *Iterator[T] {
 	const (
 		original = iota
 		cycled
 		empty
 	)
-	var (
-		elems []T
-		idx   int
-	)
+	var options allocOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	elems := make([]T, 0, options.preallocSize)
 	state := original
+
+	var idx int
 	return New(func() (T, bool) {
 		switch state {
 		case original:

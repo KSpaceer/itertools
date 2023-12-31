@@ -128,8 +128,12 @@ func (i *Iterator[T]) Filter(f func(T) bool) *Iterator[T] {
 }
 
 // Collect returns all elements of iterator as slice.
-func (i *Iterator[T]) Collect() []T {
-	var elems []T
+func (i *Iterator[T]) Collect(opts ...AllocationOption) []T {
+	var options allocOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	elems := make([]T, 0, options.preallocSize)
 	for i.Next() {
 		elems = append(elems, i.Elem())
 	}

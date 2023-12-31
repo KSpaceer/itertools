@@ -253,6 +253,7 @@ func TestFibonacciIterator_Iterfuncs(t *testing.T) {
 	t.Run("cycle", func(t *testing.T) {
 		i := itertools.Cycle(
 			itertools.New(fibonacciYielder(fibonacciLimit)),
+			itertools.WithPrealloc(len(collectedValues)),
 		).Limit(len(collectedValues) * 3)
 
 		result := i.Collect()

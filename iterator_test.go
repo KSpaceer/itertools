@@ -68,7 +68,7 @@ func TestFibonacciIterator(t *testing.T) {
 	})
 	t.Run("collect slice", func(t *testing.T) {
 		i := itertools.New(fibonacciYielder(fibonacciLimit))
-		result := i.Collect()
+		result := i.Collect(itertools.WithPrealloc(len(collectedValues)))
 
 		if cmpResult := sliceCmp(collectedValues, result); cmpResult != 0 {
 			t.Errorf("expected %v, got %v", collectedValues, result)
