@@ -11,3 +11,38 @@ Documentation for the library packages and examples are available with [GoDoc](h
 
 ```go get github.com/KSpaceer/itertools@latest```
 
+## Example
+
+```go
+data := []int{8, 1, 2, 3, 8, 7, 4, 5, 1, 6, 7, 8}
+
+// finding max value in data
+maxValue := itertools.Max(itertools.NewSliceIterator(data))
+
+// transform number so it is in range [0, 1]
+normalizeFunc := func(n int) float64 {
+    return float64(n) / float64(maxValue)
+}
+
+// iterator for normalized values
+normalizedIter := itertools.Map(
+    itertools.NewSliceIterator(data),
+    normalizeFunc,
+)
+
+// iterator for original slice
+originalIter := itertools.NewSliceIterator(data)
+
+// zipping normalized iterator with the original one to output values together
+iter := itertools.Zip(originalIter, normalizedIter)
+
+for iter.Next() {
+    value, normalizedValue := iter.Elem().Unpack()
+    fmt.Printf("original value: %d\tnormalized value: %.2f\n", value, normalizedValue)
+}
+```
+
+[Run with Playground](https://go.dev/play/p/hbnUTW1oZWK).
+
+See more examples in [docs](https://pkg.go.dev/github.com/KSpaceer/itertools).
+
