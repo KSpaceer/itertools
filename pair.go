@@ -6,6 +6,7 @@ type Pair[T, U any] struct {
 	Second U
 }
 
+// Unpack returns values of Pair as tuple.
 func (p Pair[T, U]) Unpack() (T, U) {
 	return p.First, p.Second
 }
