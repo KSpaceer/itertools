@@ -13,3 +13,8 @@ func (p Pair[T, U]) Unpack() (T, U) {
 
 // Enumeration is a specific case of Pair for Enumerate function.
 type Enumeration[T any] Pair[T, int]
+
+// Unpack returns values of Enumeration as tuple.
+func (p Enumeration[T]) Unpack() (T, int) {
+	return p.First, p.Second
+}
