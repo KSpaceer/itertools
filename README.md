@@ -5,8 +5,9 @@ with many methods similar to Rust or Python iterators.
 
 ## Documentation
 
-Documentation for the library packages is available with [GoDoc](https://pkg.go.dev/github.com/KSpaceer/itertools).
+Documentation for the library packages and examples are available with [GoDoc](https://pkg.go.dev/github.com/KSpaceer/itertools).
 
 ## Installation
 
 ```go get github.com/KSpaceer/itertools@latest```
+
