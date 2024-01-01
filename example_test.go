@@ -14,6 +14,8 @@ func ExampleNew() {
 	arr := [5]int{5, 10, 15, 20, 25}
 	var idx int
 
+	// function to manually iterator over slice.
+	// It is more comfortable to use itertools.NewSliceIterator in this case
 	f := func() (int, bool) {
 		if idx >= len(arr) {
 			return 0, false
@@ -170,6 +172,7 @@ func ExampleIterator_Collect() {
 	s := []string{"First", "Second", "Third"}
 	idx := len(s) - 1
 
+	// function to iterate over slice in reverse order
 	f := func() (string, bool) {
 		if idx < 0 {
 			return "", false
@@ -435,8 +438,8 @@ func ExampleEnumerate() {
 	iter := itertools.Enumerate(itertools.NewSliceIterator(people))
 
 	for iter.Next() {
-		elem := iter.Elem()
-		fmt.Printf("Index: %d ||| Name: %s ||| Age: %d\n", elem.Second, elem.First.Name, elem.First.Age)
+		person, i := iter.Elem().Unpack()
+		fmt.Printf("Index: %d ||| Name: %s ||| Age: %d\n", i, person.Name, person.Age)
 	}
 	// Output:
 	// Index: 0 ||| Name: Bob ||| Age: 31
@@ -566,6 +569,7 @@ func ExampleNewMapIterator() {
 		return slices.Contains(summerMonths, p.Second)
 	})
 
+	// iterating over map keys (months numbers) rather than entire key-value pairs
 	numbersIter := itertools.Map(iter, func(p itertools.Pair[int, string]) int {
 		return p.First
 	})

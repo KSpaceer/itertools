@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
+// imitating account name or something
 type Account string
 
+// stub representation of financial transaction
 type Transaction struct {
 	From      Account
 	To        Account
@@ -16,6 +18,7 @@ type Transaction struct {
 	Timestamp time.Time
 }
 
+// stub representation of transaction message from message queue
 type Message struct {
 	FromTo string
 	Amount int
@@ -31,6 +34,7 @@ func messageToTransaction(msg Message) Transaction {
 	return tx
 }
 
+// mock fraud checker for financial transactions
 type FraudChecker struct {
 	definitelyFraudulent Account
 }
@@ -39,6 +43,7 @@ func (fc *FraudChecker) IsFraudulentTransaction(tx Transaction) bool {
 	return tx.To == fc.definitelyFraudulent || tx.From == fc.definitelyFraudulent
 }
 
+// mock fraud transaction alerter
 type Alerter struct{}
 
 func (Alerter) Alert(tx Transaction) {
@@ -50,8 +55,10 @@ func (Alerter) Alert(tx Transaction) {
 	fmt.Println(sb.String())
 }
 
+// mock consumer of message queue/broker
 type MessageConsumer []Message
 
+// imitating process of message consumption
 func (mc *MessageConsumer) StartConsume() <-chan Message {
 	messages := make([]Message, len(*mc))
 	copy(messages, *mc)
@@ -110,8 +117,11 @@ func Example_mapFilter() {
 	alerter := Alerter{}
 
 	iter := itertools.Map(
+		// iterating over messages
 		itertools.NewChanIterator(ch),
+		// mapping them to transactions
 		messageToTransaction,
+		// keeping only fraudulent ones
 	).Filter(fraudChecker.IsFraudulentTransaction)
 
 	iter.Range(func(tx Transaction) bool {

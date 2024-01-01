@@ -14,9 +14,12 @@ func Example_mapReduce() {
 
 	stddev := itertools.
 		Map(
+			// iterating over data
 			itertools.NewSliceIterator(data),
+			// transforming data from int to float64
 			func(n int) float64 { return float64(n) },
 		).
+		// calculating standard deviation of data
 		Reduce(0, func(acc float64, elem float64) float64 {
 			return acc + (elem-avg)*(elem-avg)
 		})
