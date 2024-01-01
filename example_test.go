@@ -313,8 +313,8 @@ func ExampleZip() {
 	iter := itertools.Zip(nameIter, ageIter)
 
 	for iter.Next() {
-		elem := iter.Elem()
-		fmt.Printf("Name: %s ::: Age: %d\n", elem.First, elem.Second)
+		name, age := iter.Elem().Unpack()
+		fmt.Printf("Name: %s ::: Age: %d\n", name, age)
 	}
 	// Output:
 	// Name: Bob ::: Age: 31

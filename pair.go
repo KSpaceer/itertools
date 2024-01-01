@@ -6,5 +6,9 @@ type Pair[T, U any] struct {
 	Second U
 }
 
+func (p Pair[T, U]) Unpack() (T, U) {
+	return p.First, p.Second
+}
+
 // Enumeration is a specific case of Pair for Enumerate function.
 type Enumeration[T any] Pair[T, int]
