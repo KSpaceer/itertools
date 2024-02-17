@@ -2,6 +2,7 @@ package itertools_test
 
 import (
 	"github.com/KSpaceer/itertools"
+	"math/rand"
 	"slices"
 	"strconv"
 	"testing"
@@ -279,6 +280,70 @@ func TestFibonacciIterator_Iterfuncs(t *testing.T) {
 
 		if i.Next() {
 			t.Errorf("did not expect elements in empty cycle iterator; elem: %d", i.Elem())
+		}
+	})
+
+	t.Run("uniq", func(t *testing.T) {
+		i := itertools.Uniq(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+			itertools.WithPrealloc(len(collectedValues)-1),
+		)
+
+		result := i.Collect()
+
+		expected := make([]int, len(collectedValues))
+		copy(expected, collectedValues)
+		expected = slices.Compact(expected)
+
+		if !sliceEqual(expected, result) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("uniq func", func(t *testing.T) {
+		uniq := func(v int) int { return v % 10 }
+
+		i := itertools.UniqFunc(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+			uniq,
+			itertools.WithPrealloc(len(collectedValues)),
+		)
+
+		result := i.Collect()
+
+		expected := []int{0, 1, 2, 3, 5, 8, 34, 89}
+
+		if !sliceEqual(expected, result) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("sorted for sorted sequence", func(t *testing.T) {
+		i := itertools.Sorted(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+			itertools.WithPrealloc(len(collectedValues)),
+		)
+
+		result := i.Collect()
+
+		if !sliceEqual(collectedValues, result) {
+			t.Errorf("expected %v, got %v", collectedValues, result)
+		}
+	})
+
+	t.Run("sorted", func(t *testing.T) {
+		chaoticValues := slices.Clone(collectedValues)
+		rand.Shuffle(len(chaoticValues), func(i, j int) {
+			chaoticValues[i], chaoticValues[j] = chaoticValues[j], chaoticValues[i]
+		})
+		chaoticFibonacci := itertools.NewSliceIterator(chaoticValues)
+
+		i := itertools.Sorted(chaoticFibonacci, itertools.WithPrealloc(len(chaoticValues)))
+
+		result := i.Collect()
+
+		if !sliceEqual(collectedValues, result) {
+			t.Errorf("expected %v, got %v", collectedValues, result)
 		}
 	})
 }

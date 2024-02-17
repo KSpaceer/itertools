@@ -3,6 +3,7 @@ package itertools
 import (
 	"cmp"
 	"golang.org/x/exp/constraints"
+	"slices"
 )
 
 // Chain chains iterators, returning resulting chained iterator.
@@ -191,4 +192,65 @@ func Cycle[T any](i *Iterator[T], opts ...AllocationOption) *Iterator[T] {
 			return zero, false
 		}
 	})
+}
+
+// Uniq creates new iterator that yields unique elements of source iterator.
+// Guaranteeing elements' uniqueness requires space complexity of O(n).
+func Uniq[T comparable](i *Iterator[T], opts ...AllocationOption) *Iterator[T] {
+	var (
+		options allocOptions
+		zero    T
+	)
+	for _, opt := range opts {
+		opt(&options)
+	}
+	metValues := make(map[T]struct{}, options.preallocSize)
+	return New(func() (T, bool) {
+		for {
+			v, ok := i.f()
+			if !ok {
+				return zero, false
+			}
+			if _, met := metValues[v]; !met {
+				metValues[v] = struct{}{}
+				return v, true
+			}
+		}
+	})
+}
+
+// UniqFunc creates new iterator that yields unique elements of source iterator.
+// Uniqueness of elements is defined by return value from f.
+// Guaranteeing elements' uniqueness requires space complexity of O(n).
+func UniqFunc[T any, U comparable](i *Iterator[T], f func(T) U, opts ...AllocationOption) *Iterator[T] {
+	var (
+		options allocOptions
+		zero    T
+	)
+	for _, opt := range opts {
+		opt(&options)
+	}
+	metValues := make(map[U]struct{}, options.preallocSize)
+	return New(func() (T, bool) {
+		for {
+			v, ok := i.f()
+			if !ok {
+				return zero, false
+			}
+			uniqKey := f(v)
+			if _, met := metValues[uniqKey]; !met {
+				metValues[uniqKey] = struct{}{}
+				return v, true
+			}
+		}
+	})
+}
+
+// Sorted creates new iterator that yields elements of source iterator in ascending order.
+// Creating of the iterator requires time complexity equal to that of slices.Sort
+// and space complexity of O(n).
+func Sorted[T cmp.Ordered](i *Iterator[T], opts ...AllocationOption) *Iterator[T] {
+	values := i.Collect(opts...)
+	slices.Sort(values)
+	return NewSliceIterator(values)
 }

@@ -440,6 +440,49 @@ func TestSliceIterator(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(int, int) int
+			expected []int
+		}
+
+		tcases := []tcase{
+			{
+				name: "asc",
+				f:    cmp.Compare[int],
+				expected: func() []int {
+					s := slices.Clone(s)
+					slices.Sort(s)
+					return s
+				}(),
+			},
+			{
+				name: "desc",
+				f: func(a int, b int) int {
+					return cmp.Compare(b, a)
+				},
+				expected: func() []int {
+					s := slices.Clone(s)
+					slices.Sort(s)
+					slices.Reverse(s)
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.NewSliceIterator(s).SortedBy(tc.f)
+				result := iter.Collect()
+				if cmpResult := sliceCmp(tc.expected, result); cmpResult != 0 {
+					t.Errorf("expected %v, got %v", tc.expected, result)
+				}
+			})
+		}
+	})
 }
 
 func TestChanIterator(t *testing.T) {
@@ -896,6 +939,72 @@ func TestChanIterator(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(complex128, complex128) int
+			expected []complex128
+		}
+
+		tcases := []tcase{
+			{
+				name: "asc real",
+				f: func(a complex128, b complex128) int {
+					return cmp.Compare(real(a), real(b))
+				},
+				expected: func() []complex128 {
+					s := slices.Clone(s)
+					slices.SortFunc(s, func(a, b complex128) int { return cmp.Compare(real(a), real(b)) })
+					return s
+				}(),
+			},
+			{
+				name: "desc real",
+				f: func(a complex128, b complex128) int {
+					return cmp.Compare(real(b), real(a))
+				},
+				expected: func() []complex128 {
+					s := slices.Clone(s)
+					slices.SortFunc(s, func(a, b complex128) int { return cmp.Compare(real(b), real(a)) })
+					return s
+				}(),
+			},
+			{
+				name: "asc imag",
+				f: func(a complex128, b complex128) int {
+					return cmp.Compare(imag(a), imag(b))
+				},
+				expected: func() []complex128 {
+					s := slices.Clone(s)
+					slices.SortFunc(s, func(a, b complex128) int { return cmp.Compare(imag(a), imag(b)) })
+					return s
+				}(),
+			},
+			{
+				name: "desc imag",
+				f: func(a complex128, b complex128) int {
+					return cmp.Compare(imag(b), imag(a))
+				},
+				expected: func() []complex128 {
+					s := slices.Clone(s)
+					slices.SortFunc(s, func(a, b complex128) int { return cmp.Compare(imag(b), imag(a)) })
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.NewChanIterator(chanConstructor()).SortedBy(tc.f)
+				result := iter.Collect()
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
+				}
+			})
+		}
+	})
 }
 
 func TestMapIterator(t *testing.T) {
@@ -1231,6 +1340,91 @@ func TestMapIterator(t *testing.T) {
 			})
 		}
 	})
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(itertools.Pair[string, int], itertools.Pair[string, int]) int
+			expected []itertools.Pair[string, int]
+		}
+
+		tcases := []tcase{
+			{
+				name: "asc keys",
+				f: func(a, b itertools.Pair[string, int]) int {
+					return cmp.Compare(a.First, b.First)
+				},
+				expected: func() []itertools.Pair[string, int] {
+					s := make([]itertools.Pair[string, int], 0)
+					for k, v := range m {
+						s = append(s, itertools.Pair[string, int]{k, v})
+					}
+					slices.SortFunc(s, func(a, b itertools.Pair[string, int]) int {
+						return cmp.Compare(a.First, b.First)
+					})
+					return s
+				}(),
+			},
+			{
+				name: "desc keys",
+				f: func(a, b itertools.Pair[string, int]) int {
+					return cmp.Compare(b.First, a.First)
+				},
+				expected: func() []itertools.Pair[string, int] {
+					s := make([]itertools.Pair[string, int], 0)
+					for k, v := range m {
+						s = append(s, itertools.Pair[string, int]{k, v})
+					}
+					slices.SortFunc(s, func(a, b itertools.Pair[string, int]) int {
+						return cmp.Compare(b.First, a.First)
+					})
+					return s
+				}(),
+			},
+			{
+				name: "asc values",
+				f: func(a, b itertools.Pair[string, int]) int {
+					return cmp.Compare(a.Second, b.Second)
+				},
+				expected: func() []itertools.Pair[string, int] {
+					s := make([]itertools.Pair[string, int], 0)
+					for k, v := range m {
+						s = append(s, itertools.Pair[string, int]{k, v})
+					}
+					slices.SortFunc(s, func(a, b itertools.Pair[string, int]) int {
+						return cmp.Compare(a.Second, b.Second)
+					})
+					return s
+				}(),
+			},
+			{
+				name: "desc keys",
+				f: func(a, b itertools.Pair[string, int]) int {
+					return cmp.Compare(b.Second, a.Second)
+				},
+				expected: func() []itertools.Pair[string, int] {
+					s := make([]itertools.Pair[string, int], 0)
+					for k, v := range m {
+						s = append(s, itertools.Pair[string, int]{k, v})
+					}
+					slices.SortFunc(s, func(a, b itertools.Pair[string, int]) int {
+						return cmp.Compare(b.Second, a.Second)
+					})
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.NewMapIterator(m).SortedBy(tc.f)
+				result := iter.Collect()
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
+				}
+			})
+		}
+	})
 }
 
 func TestMapKeysIterator(t *testing.T) {
@@ -1500,6 +1694,49 @@ func TestMapKeysIterator(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(string, string) int
+			expected []string
+		}
+
+		tcases := []tcase{
+			{
+				name: "asc",
+				f:    cmp.Compare[string],
+				expected: func() []string {
+					s := slices.Clone(collectedValues)
+					slices.Sort(s)
+					return s
+				}(),
+			},
+			{
+				name: "desc",
+				f: func(a string, b string) int {
+					return cmp.Compare(b, a)
+				},
+				expected: func() []string {
+					s := slices.Clone(collectedValues)
+					slices.Sort(s)
+					slices.Reverse(s)
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.NewMapKeysIterator(m).SortedBy(tc.f)
+				result := iter.Collect()
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
+				}
+			})
+		}
+	})
 }
 
 func TestMapValuesIterator(t *testing.T) {
@@ -1748,6 +1985,49 @@ func TestMapValuesIterator(t *testing.T) {
 				result := itertools.NewMapValuesIterator(m).Max(tc.f)
 				if tc.expected != result {
 					t.Errorf("expected %v as max value, but got %v", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(int, int) int
+			expected []int
+		}
+
+		tcases := []tcase{
+			{
+				name: "asc",
+				f:    cmp.Compare[int],
+				expected: func() []int {
+					s := slices.Clone(collectedValues)
+					slices.Sort(s)
+					return s
+				}(),
+			},
+			{
+				name: "desc",
+				f: func(a int, b int) int {
+					return cmp.Compare(b, a)
+				},
+				expected: func() []int {
+					s := slices.Clone(collectedValues)
+					slices.Sort(s)
+					slices.Reverse(s)
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.NewMapValuesIterator(m).SortedBy(tc.f)
+				result := iter.Collect()
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
 				}
 			})
 		}
@@ -2140,6 +2420,49 @@ func TestAsciiIterator(t *testing.T) {
 			})
 		}
 
+	})
+
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(byte, byte) int
+			expected []byte
+		}
+
+		tcases := []tcase{
+			{
+				name: "asc",
+				f:    cmp.Compare[byte],
+				expected: func() []byte {
+					s := []byte(text)
+					slices.Sort(s)
+					return s
+				}(),
+			},
+			{
+				name: "desc",
+				f: func(a byte, b byte) int {
+					return cmp.Compare(b, a)
+				},
+				expected: func() []byte {
+					s := []byte(text)
+					slices.Sort(s)
+					slices.Reverse(s)
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.NewAsciiIterator(text).SortedBy(tc.f)
+				result := iter.Collect()
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
+				}
+			})
+		}
 	})
 }
 
@@ -2616,6 +2939,49 @@ func TestUTF8Iterator(t *testing.T) {
 				result := itertools.NewUTF8Iterator(text).Max(tc.comparator)
 				if tc.expected != result {
 					t.Errorf("expected %q as max value, but got %q", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(rune, rune) int
+			expected []rune
+		}
+
+		tcases := []tcase{
+			{
+				name: "asc",
+				f:    cmp.Compare[rune],
+				expected: func() []rune {
+					s := []rune(text)
+					slices.Sort(s)
+					return s
+				}(),
+			},
+			{
+				name: "desc",
+				f: func(a rune, b rune) int {
+					return cmp.Compare(b, a)
+				},
+				expected: func() []rune {
+					s := []rune(text)
+					slices.Sort(s)
+					slices.Reverse(s)
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.NewUTF8Iterator(text).SortedBy(tc.f)
+				result := iter.Collect()
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
 				}
 			})
 		}

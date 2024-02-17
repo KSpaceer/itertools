@@ -6,6 +6,7 @@ import (
 	"github.com/KSpaceer/itertools"
 	"math"
 	"slices"
+	"strings"
 	"sync"
 	"unicode"
 )
@@ -288,6 +289,34 @@ func ExampleIterator_Max() {
 	// Oldest person: John (age 42)
 }
 
+func ExampleIterator_SortedBy() {
+	type Person struct {
+		Name string
+		Age  uint
+	}
+
+	people := []Person{
+		{"Bob", 31},
+		{"John", 42},
+		{"Michael", 17},
+		{"Jenny", 26},
+	}
+
+	iter := itertools.NewSliceIterator(people).SortedBy(func(a Person, b Person) int {
+		return cmp.Compare(a.Age, b.Age)
+	})
+
+	for iter.Next() {
+		person := iter.Elem()
+		fmt.Printf("Name: %-10s Age: %d\n", person.Name, person.Age)
+	}
+	// Output:
+	// Name: Michael    Age: 17
+	// Name: Jenny      Age: 26
+	// Name: Bob        Age: 31
+	// Name: John       Age: 42
+}
+
 func ExampleChain() {
 	iter1 := itertools.NewSliceIterator([]byte("Hello"))
 
@@ -499,6 +528,57 @@ func ExampleCycle() {
 	// 2
 	// 3
 	// 1
+}
+
+func ExampleUniq() {
+	s := []int{1, 2, 3, 3, 2, 4, 2, 5, 4, 5, 1}
+
+	iter := itertools.Uniq(itertools.NewSliceIterator(s))
+
+	for iter.Next() {
+		fmt.Println(iter.Elem())
+	}
+	// Output:
+	// 1
+	// 2
+	// 3
+	// 4
+	// 5
+}
+
+func ExampleUniqFunc() {
+	words := []string{"Hello", "HELLO", "World", "HeLlO", "world", "HEllO", "WoRlD"}
+
+	iter := itertools.UniqFunc(
+		itertools.NewSliceIterator(words),
+		strings.ToLower,
+	)
+
+	for iter.Next() {
+		fmt.Println(iter.Elem())
+	}
+	// Output:
+	// Hello
+	// World
+}
+
+func ExampleSorted() {
+	s := []int{5, 8, 6, 4, 3, 7, 2, 1}
+
+	iter := itertools.Sorted(itertools.NewSliceIterator(s))
+
+	for iter.Next() {
+		fmt.Println(iter.Elem())
+	}
+	// Output:
+	// 1
+	// 2
+	// 3
+	// 4
+	// 5
+	// 6
+	// 7
+	// 8
 }
 
 func ExampleNewSliceIterator() {
