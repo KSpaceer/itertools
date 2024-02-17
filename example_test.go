@@ -289,6 +289,34 @@ func ExampleIterator_Max() {
 	// Oldest person: John (age 42)
 }
 
+func ExampleIterator_SortedBy() {
+	type Person struct {
+		Name string
+		Age  uint
+	}
+
+	people := []Person{
+		{"Bob", 31},
+		{"John", 42},
+		{"Michael", 17},
+		{"Jenny", 26},
+	}
+
+	iter := itertools.NewSliceIterator(people).SortedBy(func(a Person, b Person) int {
+		return cmp.Compare(a.Age, b.Age)
+	})
+
+	for iter.Next() {
+		person := iter.Elem()
+		fmt.Printf("Name: %-10s Age: %d\n", person.Name, person.Age)
+	}
+	// Output:
+	// Name: Michael    Age: 17
+	// Name: Jenny      Age: 26
+	// Name: Bob        Age: 31
+	// Name: John       Age: 42
+}
+
 func ExampleChain() {
 	iter1 := itertools.NewSliceIterator([]byte("Hello"))
 

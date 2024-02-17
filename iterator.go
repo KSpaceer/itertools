@@ -1,5 +1,7 @@
 package itertools
 
+import "slices"
+
 // Iterator is used to process all elements of some collection
 // or sequence. Iterator contains methods to access the elements
 // and to process or aggregate them in many ways.
@@ -199,4 +201,16 @@ func (i *Iterator[T]) Max(f func(T, T) int) T {
 		}
 	}
 	return maxValue
+}
+
+// SortedBy returns new iterator yielding elements of source iterator in sorted order.
+// Sort order is defined by cmp.
+// Comparison function cmp returns next results:
+//   - -1: if the first argument is less than second one
+//   - 0: if two arguments are equal
+//   - 1: if the first argument is greater than second one
+func (i *Iterator[T]) SortedBy(cmp func(T, T) int, opts ...AllocationOption) *Iterator[T] {
+	values := i.Collect(opts...)
+	slices.SortFunc(values, cmp)
+	return NewSliceIterator(values)
 }

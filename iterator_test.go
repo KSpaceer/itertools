@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"github.com/KSpaceer/itertools"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -487,6 +488,44 @@ func TestFibonacciIterator(t *testing.T) {
 				result := itertools.New(fibonacciYielder(fibonacciLimit)).Max(tc.f)
 				if tc.expected != result {
 					t.Errorf("expected %d as max value, but got %d", tc.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("sorted by", func(t *testing.T) {
+		type tcase struct {
+			name     string
+			f        func(int, int) int
+			expected []int
+		}
+
+		tcases := []tcase{
+			{
+				name:     "asc",
+				f:        cmp.Compare[int],
+				expected: collectedValues,
+			},
+			{
+				name: "desc",
+				f: func(a int, b int) int {
+					return cmp.Compare(b, a)
+				},
+				expected: func() []int {
+					s := slices.Clone(collectedValues)
+					slices.Reverse(s)
+					return s
+				}(),
+			},
+		}
+
+		for _, tc := range tcases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				iter := itertools.New(fibonacciYielder(fibonacciLimit)).SortedBy(tc.f)
+				result := iter.Collect()
+				if !sliceEqual(tc.expected, result) {
+					t.Errorf("expected %v, got %v", tc.expected, result)
 				}
 			})
 		}

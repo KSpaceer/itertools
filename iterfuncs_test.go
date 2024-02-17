@@ -306,6 +306,7 @@ func TestFibonacciIterator_Iterfuncs(t *testing.T) {
 		i := itertools.UniqFunc(
 			itertools.New(fibonacciYielder(fibonacciLimit)),
 			uniq,
+			itertools.WithPrealloc(len(collectedValues)),
 		)
 
 		result := i.Collect()
