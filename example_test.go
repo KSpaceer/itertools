@@ -501,6 +501,41 @@ func ExampleCycle() {
 	// 1
 }
 
+func ExampleUniq() {
+	s := []int{1, 2, 3, 3, 2, 4, 2, 5, 4, 5, 1}
+
+	iter := itertools.Uniq(itertools.NewSliceIterator(s))
+
+	for iter.Next() {
+		fmt.Println(iter.Elem())
+	}
+	// Output:
+	// 1
+	// 2
+	// 3
+	// 4
+	// 5
+}
+
+func ExampleSorted() {
+	s := []int{5, 8, 6, 4, 3, 7, 2, 1}
+
+	iter := itertools.Sorted(itertools.NewSliceIterator(s))
+
+	for iter.Next() {
+		fmt.Println(iter.Elem())
+	}
+	// Output:
+	// 1
+	// 2
+	// 3
+	// 4
+	// 5
+	// 6
+	// 7
+	// 8
+}
+
 func ExampleNewSliceIterator() {
 	s := []int{1, 2, 3, 4, 5}
 
