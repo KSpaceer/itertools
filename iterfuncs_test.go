@@ -300,6 +300,23 @@ func TestFibonacciIterator_Iterfuncs(t *testing.T) {
 		}
 	})
 
+	t.Run("uniq func", func(t *testing.T) {
+		uniq := func(v int) int { return v % 10 }
+
+		i := itertools.UniqFunc(
+			itertools.New(fibonacciYielder(fibonacciLimit)),
+			uniq,
+		)
+
+		result := i.Collect()
+
+		expected := []int{0, 1, 2, 3, 5, 8, 34, 89}
+
+		if !sliceEqual(expected, result) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
 	t.Run("sorted for sorted sequence", func(t *testing.T) {
 		i := itertools.Sorted(
 			itertools.New(fibonacciYielder(fibonacciLimit)),

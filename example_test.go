@@ -6,6 +6,7 @@ import (
 	"github.com/KSpaceer/itertools"
 	"math"
 	"slices"
+	"strings"
 	"sync"
 	"unicode"
 )
@@ -515,6 +516,22 @@ func ExampleUniq() {
 	// 3
 	// 4
 	// 5
+}
+
+func ExampleUniqFunc() {
+	words := []string{"Hello", "HELLO", "World", "HeLlO", "world", "HEllO", "WoRlD"}
+
+	iter := itertools.UniqFunc(
+		itertools.NewSliceIterator(words),
+		strings.ToLower,
+	)
+
+	for iter.Next() {
+		fmt.Println(iter.Elem())
+	}
+	// Output:
+	// Hello
+	// World
 }
 
 func ExampleSorted() {
